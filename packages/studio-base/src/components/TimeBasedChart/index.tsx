@@ -68,12 +68,12 @@ export const getTooltipItemForMessageHistoryItem = (item: MessageAndData): Toolt
 };
 
 export type TimeBasedChartTooltipData = {
-  x: number;
-  y: number;
+  x: number | bigint;
+  y: number | bigint;
   datasetKey?: string;
   item: TooltipItem;
   path: string;
-  value: number | boolean | string;
+  value: number | bigint | boolean | string;
   constantName?: string;
   startTime: Time;
   source?: number;
@@ -310,7 +310,7 @@ export default function TimeBasedChart(props: Props): JSX.Element {
       // We do a lazy linear find for now - a perf on this vs map lookups might be useful
       // Note then you need to make keys from x/y points
       const tooltipData = tooltips?.find(
-        (item) => item.x === element.data?.x && item.y === element.data?.y,
+        (item) => Number(item.x) === element.data?.x && Number(item.y) === element.data?.y,
       );
       if (!tooltipData) {
         return setActiveTooltip(undefined);
@@ -702,6 +702,10 @@ export default function TimeBasedChart(props: Props): JSX.Element {
         return;
       }
 
+      if (userInteraction) {
+        setHasUserPannedOrZoomed(true);
+      }
+
       currentScalesRef.current = scales;
 
       queueDownsampleInvalidate();
@@ -712,8 +716,8 @@ export default function TimeBasedChart(props: Props): JSX.Element {
       }
 
       // the change is a result of user interaction on our chart
-      // we definitely set the sync scale value so other charts follow our zoom/pan behavior
-      if (userInteraction) {
+      // we set the sync scale value so other synced charts follow our zoom/pan behavior
+      if (userInteraction && isSynced) {
         setGlobalBounds({
           min: scales.x.min,
           max: scales.x.max,
