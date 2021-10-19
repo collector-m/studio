@@ -25,11 +25,10 @@ import ChevronDownIcon from "@mdi/svg/svg/chevron-down.svg";
 import cx from "classnames";
 import { clamp, groupBy } from "lodash";
 import Tree from "rc-tree";
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { useResizeDetector } from "react-resize-detector";
 import { CSSTransition } from "react-transition-group";
 
-import { LegacyInput } from "@foxglove/studio-base/components/LegacyStyledComponents";
 import useChangeDetector from "@foxglove/studio-base/hooks/useChangeDetector";
 import useLinkedGlobalVariables from "@foxglove/studio-base/panels/ThreeDimensionalViz/Interactions/useLinkedGlobalVariables";
 import { TopicSettingsCollection } from "@foxglove/studio-base/panels/ThreeDimensionalViz/SceneBuilder";
