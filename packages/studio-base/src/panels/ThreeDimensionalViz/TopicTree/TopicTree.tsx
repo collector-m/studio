@@ -20,6 +20,10 @@ import {
   TextField,
   Text,
   useTheme,
+  ITheme,
+  IStackStyles,
+  ITextFieldStyles,
+  IButtonStyles,
 } from "@fluentui/react";
 import ChevronDownIcon from "@mdi/svg/svg/chevron-down.svg";
 import cx from "classnames";
@@ -147,6 +151,192 @@ const classes = mergeStyleSets({
   },
 });
 
+const makeStyles = (theme: ITheme) => ({
+  topicTree: {
+    root: {
+      position: "sticky",
+      top: 0,
+      zIndex: 1,
+      backgroundColor: theme.semanticColors.buttonBackgroundHovered,
+      borderTopLeftRadius: theme.effects.roundedCorner4,
+      borderTopRightRadius: theme.effects.roundedCorner4,
+    },
+  } as Partial<IStackStyles>,
+
+  input: {
+    icon: {
+      lineHeight: 0,
+      color: theme.semanticColors.inputText,
+      left: theme.spacing.s1,
+      right: "auto",
+      fontSize: 18,
+
+      svg: {
+        fill: "currentColor",
+        height: "1em",
+        width: "1em",
+      },
+    },
+    field: {
+      fontSize: theme.fonts.small.fontSize,
+      lineHeight: 30,
+      padding: `0 ${theme.spacing.l2}`,
+
+      "::placeholder": {
+        opacity: 0.6,
+        fontSize: theme.fonts.small.fontSize,
+        lineHeight: 30,
+      },
+    },
+    fieldGroup: {
+      backgroundColor: colors.DARK3,
+      borderColor: colors.DARK3,
+
+      ":hover, :focus": {
+        backgroundColor: colors.DARK2,
+      },
+    },
+  } as Partial<ITextFieldStyles>,
+
+  clearIcon: {
+    root: {
+      position: "absolute",
+      right: 0,
+      transform: "translateX(-100%d)",
+      zIndex: 2,
+    },
+    rootHovered: { backgroundColor: "transparent" },
+    rootPressed: { backgroundColor: "transparent" },
+    rootDisabled: { backgroundColor: "transparent" },
+    icon: {
+      color: theme.semanticColors.bodySubtext,
+
+      svg: {
+        fill: "currentColor",
+        height: "1em",
+        width: "1em",
+      },
+    },
+  } as Partial<IButtonStyles>,
+
+  topicDisplayMode: {
+    flexContainer: {
+      justifyContent: "space-between",
+    },
+    root: {
+      fontSize: theme.fonts.small.fontSize,
+      minWidth: 96,
+      borderColor: theme.semanticColors.bodyDivider,
+      backgroundColor: "transparent",
+      padding: `0 ${theme.spacing.s1}`,
+    },
+    label: {
+      fontWeight: 400,
+      textAlign: "left",
+    },
+    rootHovered: { backgroundColor: theme.semanticColors.buttonBackgroundPressed },
+    rootDisabled: { backgroundColor: "transparent" },
+    menuIcon: {
+      fontSize: 8,
+      color: "white",
+
+      svg: {
+        fill: "currentColor",
+        height: "1em",
+        width: "1em",
+      },
+    },
+  } as Partial<IButtonStyles>,
+
+  topicDisplayModeMenuItem: {
+    root: {
+      height: "auto",
+      lineHeight: 32,
+    },
+    label: {
+      fontSize: theme.fonts.small.fontSize,
+    },
+  } as Partial<IContextualMenuItemStyles>,
+
+  expandIcon: {
+    rootHovered: { backgroundColor: "transparent" },
+    rootPressed: { backgroundColor: "transparent" },
+    rootDisabled: { backgroundColor: "transparent" },
+    rootFocused: { color: "white" },
+    icon: {
+      color: "white",
+
+      svg: {
+        fill: "currentColor",
+        height: "1em",
+        width: "1em",
+      },
+    },
+  } as Partial<IButtonStyles>,
+
+  syncIcon: {
+    rootHovered: { backgroundColor: "transparent" },
+    rootPressed: { backgroundColor: "transparent" },
+    rootDisabled: { backgroundColor: "transparent" },
+    menuIcon: {
+      fontSize: 8,
+      color: "white",
+
+      svg: {
+        fill: "currentColor",
+        height: "1em",
+        width: "1em",
+      },
+    },
+    icon: {
+      color: "white",
+
+      svg: {
+        fill: "currentColor",
+        height: "1em",
+        width: "1em",
+      },
+    },
+  } as Partial<IButtonStyles>,
+
+  syncMenuItem: {
+    root: {
+      height: "auto",
+      lineHeight: "1.3",
+    },
+    linkContent: {
+      flexDirection: "column",
+      alignItems: "flex-start",
+      padding: theme.spacing.s1,
+      paddingLeft: theme.spacing.l2,
+      position: "relative",
+    },
+    label: {
+      display: "block",
+      margin: 0,
+      fontSize: theme.fonts.smallPlus.fontSize,
+    },
+    secondaryText: {
+      textAlign: "left",
+      paddingLeft: 0,
+      fontSize: theme.fonts.xSmall.fontSize,
+    },
+    icon: {
+      position: "absolute",
+      left: 2,
+      top: "50%",
+      marginTop: "-0.5em",
+      color: "white",
+
+      svg: {
+        fill: "currentColor",
+        height: "1em",
+        width: "1em",
+      },
+    },
+  } as Partial<IContextualMenuItemStyles>,
+});
+
 const transitionClasses = mergeStyleSets({
   enter: {
     opacity: 0,
@@ -254,6 +444,7 @@ function TopicTree({
   visibleTopicsCountByKey,
 }: BaseProps) {
   const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const renderTopicTree = pinTopics || showTopicTree;
   const scrollContainerRef = useRef<HTMLDivElement>(ReactNull);
   const checkedKeysSet = useMemo(() => new Set(checkedKeys), [checkedKeys]);
@@ -294,22 +485,13 @@ function TopicTree({
       <Stack
         horizontal
         verticalAlign="center"
-        styles={{
-          root: {
-            position: "sticky",
-            top: 0,
-            zIndex: 1,
-            backgroundColor: theme.semanticColors.buttonBackgroundHovered,
-            borderTopLeftRadius: theme.effects.roundedCorner4,
-            borderTopRightRadius: theme.effects.roundedCorner4,
-          },
-        }}
+        styles={styles.topicTree}
         tokens={{
           childrenGap: theme.spacing.s2,
           padding: theme.spacing.s2,
         }}
       >
-        <Stack grow styles={{ root: { position: "relative" } }}>
+        <Stack horizontal grow styles={{ root: { position: "relative" } }}>
           <TextField
             iconProps={{ iconName: "Search" }}
             data-test="topic-tree-filter-input"
@@ -318,72 +500,19 @@ function TopicTree({
             onChange={(_, newValue) => setFilterText(newValue ?? "")}
             onKeyDown={onKeyDown}
             autoFocus
-            styles={{
-              icon: {
-                lineHeight: 0,
-                color: theme.semanticColors.inputText,
-                left: theme.spacing.s1,
-                right: "auto",
-                fontSize: 18,
-
-                svg: {
-                  fill: "currentColor",
-                  height: "1em",
-                  width: "1em",
-                },
-              },
-              field: {
-                fontSize: theme.fonts.small.fontSize,
-                lineHeight: 30,
-                padding: `0 ${theme.spacing.l2}`,
-
-                "::placeholder": {
-                  opacity: 0.6,
-                  fontSize: theme.fonts.small.fontSize,
-                  lineHeight: 30,
-                },
-              },
-              fieldGroup: {
-                backgroundColor: colors.DARK3,
-                borderColor: colors.DARK3,
-
-                ":hover, :focus": {
-                  backgroundColor: colors.DARK2,
-                },
-              },
-            }}
+            styles={styles.input}
           />
           {filterText.length > 0 && (
             <IconButton
               iconProps={{ iconName: "Close" }}
               data-test="clear-filter-icon"
               onClick={() => setFilterText("")}
-              styles={{
-                root: {
-                  position: "absolute",
-                  right: 0,
-                  transform: "translateX(-100%d)",
-                  zIndex: 2,
-                },
-                rootHovered: { backgroundColor: "transparent" },
-                rootPressed: { backgroundColor: "transparent" },
-                rootDisabled: { backgroundColor: "transparent" },
-                icon: {
-                  color: theme.semanticColors.bodySubtext,
-
-                  svg: {
-                    fill: "currentColor",
-                    height: "1em",
-                    width: "1em",
-                  },
-                },
-              }}
+              styles={styles.clearIcon}
             />
           )}
         </Stack>
         <DefaultButton
           disabled={!rootTreeNode.providerAvailable}
-          text={TOPIC_DISPLAY_MODES[topicDisplayMode].label}
           menuIconProps={{ iconName: "CaretSolidDown" }}
           menuProps={{
             items: dropdownOptions.map(({ label, value }) => ({
@@ -395,70 +524,22 @@ function TopicTree({
             useTargetWidth: true,
             styles: {
               subComponentStyles: {
-                menuItem: {
-                  root: {
-                    height: "auto",
-                    lineHeight: 32,
-                  },
-                  label: {
-                    fontSize: theme.fonts.small.fontSize,
-                  },
-                } as Partial<IContextualMenuItemStyles>,
+                menuItem: styles.topicDisplayModeMenuItem,
               },
             },
           }}
-          styles={{
-            flexContainer: {
-              justifyContent: "space-between",
-            },
-            root: {
-              fontSize: theme.fonts.small.fontSize,
-              minWidth: 96,
-              borderColor: theme.semanticColors.bodyDivider,
-              backgroundColor: "transparent",
-              padding: `0 ${theme.spacing.s1}`,
-            },
-            label: {
-              fontWeight: 400,
-              textAlign: "left",
-            },
-            rootHovered: { backgroundColor: theme.semanticColors.buttonBackgroundPressed },
-            rootDisabled: { backgroundColor: "transparent" },
-            menuIcon: {
-              fontSize: 8,
-              color: "white",
-
-              svg: {
-                fill: "currentColor",
-                height: "1em",
-                width: "1em",
-              },
-            },
-          }}
+          styles={styles.topicDisplayMode}
+          text={TOPIC_DISPLAY_MODES[topicDisplayMode].label}
         />
         <IconButton
+          data-test="expand-all-icon"
           disabled={!rootTreeNode.providerAvailable || filterText.length !== 0}
           iconProps={{ iconName: topLevelNodesCollapsed ? "UnfoldMore" : "UnfoldLess" }}
-          data-test="expand-all-icon"
-          // tooltip={topLevelNodesCollapsed ? "Expand all" : "Collapse all"}
           onClick={() => {
             saveConfig({ expandedKeys: topLevelNodesCollapsed ? allKeys : [] });
           }}
-          styles={{
-            rootHovered: { backgroundColor: "transparent" },
-            rootPressed: { backgroundColor: "transparent" },
-            rootDisabled: { backgroundColor: "transparent" },
-            rootFocused: { color: "white" },
-            icon: {
-              color: "white",
-
-              svg: {
-                fill: "currentColor",
-                height: "1em",
-                width: "1em",
-              },
-            },
-          }}
+          styles={styles.expandIcon}
+          title={topLevelNodesCollapsed ? "Expand all" : "Collapse all"}
         />
         <IconButton
           iconProps={{ iconName: "Sync" }}
@@ -494,69 +575,11 @@ function TopicTree({
             ],
             styles: {
               subComponentStyles: {
-                menuItem: {
-                  root: {
-                    height: "auto",
-                    lineHeight: "1.3",
-                  },
-                  linkContent: {
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    padding: theme.spacing.s1,
-                    paddingLeft: theme.spacing.l2,
-                    position: "relative",
-                  },
-                  label: {
-                    display: "block",
-                    margin: 0,
-                    fontSize: theme.fonts.smallPlus.fontSize,
-                  },
-                  secondaryText: {
-                    textAlign: "left",
-                    paddingLeft: 0,
-                    fontSize: theme.fonts.xSmall.fontSize,
-                  },
-                  icon: {
-                    position: "absolute",
-                    left: 2,
-                    top: "50%",
-                    marginTop: "-0.5em",
-                    color: "white",
-
-                    svg: {
-                      fill: "currentColor",
-                      height: "1em",
-                      width: "1em",
-                    },
-                  },
-                } as Partial<IContextualMenuItemStyles>,
+                menuItem: styles.syncMenuItem,
               },
             },
           }}
-          styles={{
-            rootHovered: { backgroundColor: "transparent" },
-            rootPressed: { backgroundColor: "transparent" },
-            rootDisabled: { backgroundColor: "transparent" },
-            menuIcon: {
-              fontSize: 8,
-              color: "white",
-
-              svg: {
-                fill: "currentColor",
-                height: "1em",
-                width: "1em",
-              },
-            },
-            icon: {
-              color: "white",
-
-              svg: {
-                fill: "currentColor",
-                height: "1em",
-                width: "1em",
-              },
-            },
-          }}
+          styles={styles.syncIcon}
         />
       </Stack>
       {hasFeatureColumn && <DiffModeSettings enabled={diffModeEnabled} saveConfig={saveConfig} />}
@@ -571,15 +594,7 @@ function TopicTree({
             }}
           >
             <NoMatchesSvg />
-            <Text
-              variant="smallPlus"
-              styles={{
-                root: {
-                  textAlign: "center",
-                  lineHeight: "1.3",
-                },
-              }}
-            >
+            <Text variant="smallPlus" styles={{ root: { textAlign: "center", lineHeight: "1.3" } }}>
               No results found.
               <br />
               Try searching a different term.
@@ -666,10 +681,7 @@ function TopicTreeWrapper({
   });
 
   return (
-    <div
-      style={{ height: containerHeight - CONTAINER_SPACING * 3 }}
-      className={cx(classes.wrapper)}
-    >
+    <div className={classes.wrapper} style={{ height: containerHeight - CONTAINER_SPACING * 3 }}>
       <div
         ref={sizeRef}
         style={{
