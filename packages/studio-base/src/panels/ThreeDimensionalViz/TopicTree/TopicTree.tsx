@@ -11,16 +11,17 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { mergeStyleSets } from "@fluentui/react";
-import ArrowLeftIcon from "@mdi/svg/svg/arrow-left.svg";
-import ArrowRightIcon from "@mdi/svg/svg/arrow-right.svg";
+import {
+  DefaultButton,
+  IconButton,
+  IContextualMenuItemStyles,
+  mergeStyleSets,
+  Stack,
+  TextField,
+  Text,
+  useTheme,
+} from "@fluentui/react";
 import ChevronDownIcon from "@mdi/svg/svg/chevron-down.svg";
-import CloseIcon from "@mdi/svg/svg/close.svg";
-import MagnifyIcon from "@mdi/svg/svg/magnify.svg";
-import SwapHorizontalIcon from "@mdi/svg/svg/swap-horizontal.svg";
-import SyncIcon from "@mdi/svg/svg/sync.svg";
-import LessIcon from "@mdi/svg/svg/unfold-less-horizontal.svg";
-import MoreIcon from "@mdi/svg/svg/unfold-more-horizontal.svg";
 import cx from "classnames";
 import { clamp, groupBy } from "lodash";
 import Tree from "rc-tree";
@@ -28,10 +29,7 @@ import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useResizeDetector } from "react-resize-detector";
 import { CSSTransition } from "react-transition-group";
 
-import Dropdown from "@foxglove/studio-base/components/Dropdown";
-import Icon from "@foxglove/studio-base/components/Icon";
 import { LegacyInput } from "@foxglove/studio-base/components/LegacyStyledComponents";
-import { Item } from "@foxglove/studio-base/components/Menu";
 import useChangeDetector from "@foxglove/studio-base/hooks/useChangeDetector";
 import useLinkedGlobalVariables from "@foxglove/studio-base/panels/ThreeDimensionalViz/Interactions/useLinkedGlobalVariables";
 import { TopicSettingsCollection } from "@foxglove/studio-base/panels/ThreeDimensionalViz/SceneBuilder";
@@ -41,7 +39,7 @@ import { colors } from "@foxglove/studio-base/util/sharedStyleConstants";
 import { Save3DConfig } from "../index";
 import DiffModeSettings from "./DiffModeSettings";
 import TopicTreeSwitcher, { SWITCHER_HEIGHT } from "./TopicTreeSwitcher";
-import TopicViewModeSelector from "./TopicViewModeSelector";
+// import TopicViewModeSelector from "./TopicViewModeSelector";
 import { ROW_HEIGHT, TREE_SPACING } from "./constants";
 import NoMatchesSvg from "./noMatches.svg";
 import renderTreeNodes, { SWITCHER_WIDTH } from "./renderTreeNodes";
@@ -54,7 +52,6 @@ import {
   OnNamespaceOverrideColorChange,
   SceneErrorsByKey,
   SetCurrentEditingTopic,
-  TopicDisplayMode,
   TreeGroupNode,
   TreeNode,
   VisibleTopicsCountByKey,
@@ -114,7 +111,7 @@ const classes = mergeStyleSets({
       display: "flex",
       padding: 0,
 
-      "&:hover": {
+      ":hover": {
         background: colors.DARK4,
       },
       "&.rc-tree-treenode-disabled": {
@@ -141,39 +138,6 @@ const classes = mergeStyleSets({
       },
     },
   },
-  header: {
-    position: "sticky",
-    top: 0,
-    zIndex: 1,
-    display: "flex",
-    paddingLeft: 8,
-    alignItems: "center",
-    backgroundColor: colors.DARK5,
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
-  },
-  filter: {
-    display: "flex",
-    padding: "8px 4px",
-    alignItems: "center",
-    flex: 1,
-  },
-  input: {
-    height: 24,
-    background: "transparent",
-    flex: 1,
-    overflow: "auto",
-    fontSize: 12,
-    marginLeft: 4,
-    padding: "4px 8px",
-    minWidth: 80,
-    border: "none",
-
-    ":focus, :hover": {
-      outline: "none",
-      background: "transparent",
-    },
-  },
   icon: {
     width: SWITCHER_WIDTH,
     height: ROW_HEIGHT,
@@ -181,21 +145,6 @@ const classes = mergeStyleSets({
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-  },
-  noMatches: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 57,
-    marginBottom: 74,
-  },
-  noMatchesText: {
-    marginTop: 25,
-    fontSize: 16,
-    width: 205,
-    textAlign: "center",
-    lineHeight: "130%",
   },
 });
 
@@ -255,6 +204,28 @@ type BaseProps = SharedProps & {
   treeHeight: number;
 };
 
+export type TopicDisplayMode = keyof typeof TOPIC_DISPLAY_MODES;
+
+export const TOPIC_DISPLAY_MODES = {
+  SHOW_ALL: {
+    value: "SHOW_ALL",
+    label: "All",
+  },
+  SHOW_AVAILABLE: {
+    value: "SHOW_AVAILABLE",
+    label: "Available",
+  },
+  SHOW_SELECTED: {
+    value: "SHOW_SELECTED",
+    label: "Visible",
+  },
+} as const;
+
+const dropdownOptions = (Object.keys(TOPIC_DISPLAY_MODES) as TopicDisplayMode[]).map((key) => ({
+  label: TOPIC_DISPLAY_MODES[key].label,
+  value: TOPIC_DISPLAY_MODES[key].value,
+}));
+
 function TopicTree({
   allKeys,
   availableNamespacesByTopic,
@@ -283,11 +254,10 @@ function TopicTree({
   treeWidth,
   visibleTopicsCountByKey,
 }: BaseProps) {
+  const theme = useTheme();
   const renderTopicTree = pinTopics || showTopicTree;
   const scrollContainerRef = useRef<HTMLDivElement>(ReactNull);
   const checkedKeysSet = useMemo(() => new Set(checkedKeys), [checkedKeys]);
-
-  const filterTextFieldRef = useRef<HTMLInputElement>(ReactNull);
 
   // HACK: rc-tree does not auto expand dynamic tree nodes. Create a copy of expandedNodes
   // to ensure newly added nodes such as `uncategorized` are properly expanded:
@@ -295,15 +265,6 @@ function TopicTree({
   const expandedKeysRef = useRef(expandedKeys);
   const hasRootNodeChanged = useChangeDetector([rootTreeNode], { initiallyTrue: false });
   expandedKeysRef.current = hasRootNodeChanged ? [...expandedKeys] : expandedKeys;
-
-  useEffect(() => {
-    // auto focus whenever first rendering the topic tree
-    if (renderTopicTree && filterTextFieldRef.current) {
-      const filterTextFieldEl: HTMLInputElement = filterTextFieldRef.current;
-      filterTextFieldEl.focus();
-      filterTextFieldEl.select();
-    }
-  }, [renderTopicTree]);
 
   const topLevelNodesCollapsed = useMemo(() => {
     const topLevelChildren = rootTreeNode.type === "group" ? rootTreeNode.children : [];
@@ -314,7 +275,6 @@ function TopicTree({
   const showNoMatchesState = !getIsTreeNodeVisibleInTree(rootTreeNode.key);
 
   const isXSWidth = treeWidth < DEFAULT_XS_WIDTH;
-  const headerRightIconStyle = { margin: `4px ${(isXSWidth ? 0 : TREE_SPACING) + 2}px 4px 0px` };
 
   const { linkedGlobalVariables } = useLinkedGlobalVariables();
   const linkedGlobalVariablesByTopic = groupBy(linkedGlobalVariables, ({ topic }) => topic);
@@ -331,100 +291,301 @@ function TopicTree({
   );
 
   return (
-    <div className={cx(classes.inner, { isXSWidth })} style={{ width: treeWidth }}>
-      <header className={classes.header}>
-        <div className={classes.filter}>
-          <Icon style={{ color: "rgba(255,255,255, 0.3)" }}>
-            <MagnifyIcon style={{ width: 16, height: 16 }} />
-          </Icon>
-          <LegacyInput
-            className={classes.input}
-            size={3}
+    <Stack className={cx(classes.inner)} styles={{ root: { width: treeWidth } }}>
+      <Stack
+        horizontal
+        verticalAlign="center"
+        styles={{
+          root: {
+            position: "sticky",
+            top: 0,
+            zIndex: 1,
+            backgroundColor: theme.semanticColors.buttonBackgroundHovered,
+            borderTopLeftRadius: theme.effects.roundedCorner4,
+            borderTopRightRadius: theme.effects.roundedCorner4,
+          },
+        }}
+        tokens={{
+          childrenGap: theme.spacing.s2,
+          padding: theme.spacing.s2,
+        }}
+      >
+        <Stack grow styles={{ root: { position: "relative" } }}>
+          <TextField
+            iconProps={{ iconName: "Search" }}
             data-test="topic-tree-filter-input"
             value={filterText}
-            placeholder="Type to filter"
-            onChange={(event) => setFilterText(event.target.value)}
+            placeholder="Type to filter" // FIX ME: this should be "Search by Topic or Filter by topic"
+            onChange={(_, newValue) => setFilterText(newValue ?? "")}
             onKeyDown={onKeyDown}
-            ref={filterTextFieldRef}
-          />
-        </div>
-        {rootTreeNode.providerAvailable && (
-          <TopicViewModeSelector
-            isXSWidth={isXSWidth}
-            saveConfig={saveConfig}
-            topicDisplayMode={topicDisplayMode}
-          />
-        )}
-        {filterText.length === 0 && (
-          <Icon
-            dataTest="expand-all-icon"
-            tooltip={topLevelNodesCollapsed ? "Expand all" : "Collapse all"}
-            size="small"
-            fade
-            onClick={() => {
-              saveConfig({ expandedKeys: topLevelNodesCollapsed ? allKeys : [] });
+            autoFocus
+            styles={{
+              icon: {
+                lineHeight: 0,
+                color: theme.semanticColors.inputText,
+                left: theme.spacing.s1,
+                right: "auto",
+                fontSize: 18,
+
+                svg: {
+                  fill: "currentColor",
+                  height: "1em",
+                  width: "1em",
+                },
+              },
+              field: {
+                fontSize: theme.fonts.small.fontSize,
+                lineHeight: 30,
+                padding: `0 ${theme.spacing.l2}`,
+
+                "::placeholder": {
+                  opacity: 0.6,
+                  fontSize: theme.fonts.small.fontSize,
+                  lineHeight: 30,
+                },
+              },
+              fieldGroup: {
+                backgroundColor: colors.DARK3,
+                borderColor: colors.DARK3,
+
+                ":hover, :focus": {
+                  backgroundColor: colors.DARK2,
+                },
+              },
             }}
-            style={headerRightIconStyle}
-          >
-            {topLevelNodesCollapsed ? <MoreIcon /> : <LessIcon />}
-          </Icon>
-        )}
-        {filterText.length > 0 && (
-          <Icon
-            dataTest="clear-filter-icon"
-            size="small"
-            fade
-            style={headerRightIconStyle}
-            onClick={() => setFilterText("")}
-          >
-            <CloseIcon />
-          </Icon>
-        )}
-        <Dropdown
-          toggleComponent={
-            <Icon size="small" fade style={headerRightIconStyle} tooltip="Sync settings">
-              <SyncIcon />
-            </Icon>
-          }
-        >
-          <Item
-            icon={<ArrowRightIcon />}
-            tooltip="Set bag 2's topic settings and selected topics to bag 1's"
-            onClick={() =>
-              saveConfig(syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.bag1ToBag2))
-            }
-          >
-            Sync bag 1 to bag 2
-          </Item>
-          <Item
-            icon={<ArrowLeftIcon />}
-            tooltip="Set bag 1's topic settings and selected topics to bag 2's"
-            onClick={() =>
-              saveConfig(syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.bag2ToBag1))
-            }
-          >
-            Sync bag 2 to bag 1
-          </Item>
-          <Item
-            icon={<SwapHorizontalIcon />}
-            tooltip="Swap topic settings and selected topics between bag 1 and bag 2"
-            onClick={() =>
-              saveConfig(syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.swapBag1AndBag2))
-            }
-          >
-            Swap bags 1 and 2
-          </Item>
-        </Dropdown>
-      </header>
+          />
+          {filterText.length > 0 && (
+            <IconButton
+              iconProps={{ iconName: "Close" }}
+              data-test="clear-filter-icon"
+              onClick={() => setFilterText("")}
+              styles={{
+                root: {
+                  position: "absolute",
+                  right: 0,
+                  transform: "translateX(-100%d)",
+                  zIndex: 2,
+                },
+                rootHovered: { backgroundColor: "transparent" },
+                rootPressed: { backgroundColor: "transparent" },
+                rootDisabled: { backgroundColor: "transparent" },
+                icon: {
+                  color: theme.semanticColors.bodySubtext,
+
+                  svg: {
+                    fill: "currentColor",
+                    height: "1em",
+                    width: "1em",
+                  },
+                },
+              }}
+            />
+          )}
+        </Stack>
+        <DefaultButton
+          disabled={!rootTreeNode.providerAvailable}
+          text={TOPIC_DISPLAY_MODES[topicDisplayMode].label}
+          menuIconProps={{ iconName: "CaretSolidDown" }}
+          menuProps={{
+            items: dropdownOptions.map(({ label, value }) => ({
+              key: value,
+              text: label,
+              onClick: () => saveConfig({ topicDisplayMode: value }),
+              checked: true,
+            })),
+            useTargetWidth: true,
+            styles: {
+              subComponentStyles: {
+                menuItem: {
+                  root: {
+                    height: "auto",
+                    lineHeight: 32,
+                  },
+                  label: {
+                    fontSize: theme.fonts.small.fontSize,
+                  },
+                } as Partial<IContextualMenuItemStyles>,
+              },
+            },
+          }}
+          styles={{
+            flexContainer: {
+              justifyContent: "space-between",
+            },
+            root: {
+              fontSize: theme.fonts.small.fontSize,
+              minWidth: 96,
+              borderColor: theme.semanticColors.bodyDivider,
+              backgroundColor: "transparent",
+              padding: `0 ${theme.spacing.s1}`,
+            },
+            label: {
+              fontWeight: 400,
+              textAlign: "left",
+            },
+            rootHovered: { backgroundColor: theme.semanticColors.buttonBackgroundPressed },
+            rootDisabled: { backgroundColor: "transparent" },
+            menuIcon: {
+              fontSize: 8,
+              color: "white",
+
+              svg: {
+                fill: "currentColor",
+                height: "1em",
+                width: "1em",
+              },
+            },
+          }}
+        />
+        <IconButton
+          disabled={!rootTreeNode.providerAvailable || filterText.length !== 0}
+          iconProps={{ iconName: topLevelNodesCollapsed ? "UnfoldMore" : "UnfoldLess" }}
+          data-test="expand-all-icon"
+          // tooltip={topLevelNodesCollapsed ? "Expand all" : "Collapse all"}
+          onClick={() => {
+            saveConfig({ expandedKeys: topLevelNodesCollapsed ? allKeys : [] });
+          }}
+          styles={{
+            rootHovered: { backgroundColor: "transparent" },
+            rootPressed: { backgroundColor: "transparent" },
+            rootDisabled: { backgroundColor: "transparent" },
+            rootFocused: { color: "white" },
+            icon: {
+              color: "white",
+
+              svg: {
+                fill: "currentColor",
+                height: "1em",
+                width: "1em",
+              },
+            },
+          }}
+        />
+        <IconButton
+          iconProps={{ iconName: "Sync" }}
+          menuIconProps={{ iconName: "CaretSolidDown" }}
+          menuProps={{
+            items: [
+              {
+                key: "bag1ToBag2",
+                text: "Sync bag 1 to bag 2",
+                secondaryText: "Set bag 2's topic settings and selected topics to bag 1's",
+                iconProps: { iconName: "ArrowStepLeft" },
+                onClick: () =>
+                  saveConfig(syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.bag1ToBag2)),
+              },
+              {
+                key: "bag2ToBag1",
+                text: "Sync bag 2 to bag 1",
+                secondaryText: "Set bag 1's topic settings and selected topics to bag 2's",
+                iconProps: { iconName: "ArrowStepRight" },
+                onClick: () =>
+                  saveConfig(syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.bag2ToBag1)),
+              },
+              {
+                key: "swapBag1AndBag2",
+                text: "Swap bags 1 and 2",
+                secondaryText: "Swap topic settings and selected topics between bag 1 and bag 2",
+                iconProps: { iconName: "SwapHorizontal" },
+                onClick: () =>
+                  saveConfig(
+                    syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.swapBag1AndBag2),
+                  ),
+              },
+            ],
+            styles: {
+              subComponentStyles: {
+                menuItem: {
+                  root: {
+                    height: "auto",
+                    lineHeight: "1.3",
+                  },
+                  linkContent: {
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    padding: theme.spacing.s1,
+                    paddingLeft: theme.spacing.l2,
+                    position: "relative",
+                  },
+                  label: {
+                    display: "block",
+                    margin: 0,
+                    fontSize: theme.fonts.smallPlus.fontSize,
+                  },
+                  secondaryText: {
+                    textAlign: "left",
+                    paddingLeft: 0,
+                    fontSize: theme.fonts.xSmall.fontSize,
+                  },
+                  icon: {
+                    position: "absolute",
+                    left: 2,
+                    top: "50%",
+                    marginTop: "-0.5em",
+                    color: "white",
+
+                    svg: {
+                      fill: "currentColor",
+                      height: "1em",
+                      width: "1em",
+                    },
+                  },
+                } as Partial<IContextualMenuItemStyles>,
+              },
+            },
+          }}
+          styles={{
+            rootHovered: { backgroundColor: "transparent" },
+            rootPressed: { backgroundColor: "transparent" },
+            rootDisabled: { backgroundColor: "transparent" },
+            menuIcon: {
+              fontSize: 8,
+              color: "white",
+
+              svg: {
+                fill: "currentColor",
+                height: "1em",
+                width: "1em",
+              },
+            },
+            icon: {
+              color: "white",
+
+              svg: {
+                fill: "currentColor",
+                height: "1em",
+                width: "1em",
+              },
+            },
+          }}
+        />
+      </Stack>
       {hasFeatureColumn && <DiffModeSettings enabled={diffModeEnabled} saveConfig={saveConfig} />}
       <div ref={scrollContainerRef} style={{ overflow: "auto", width: treeWidth }}>
         {showNoMatchesState ? (
-          <div className={classes.noMatches}>
+          <Stack
+            verticalAlign="center"
+            horizontalAlign="center"
+            tokens={{
+              padding: `${theme.spacing.l2} 0 ${theme.spacing.l1}`,
+              childrenGap: theme.spacing.m,
+            }}
+          >
             <NoMatchesSvg />
-            <div className={classes.noMatchesText}>
-              No results found. Try searching a different term.
-            </div>
-          </div>
+            <Text
+              variant="smallPlus"
+              styles={{
+                root: {
+                  textAlign: "center",
+                  lineHeight: "1.3",
+                },
+              }}
+            >
+              No results found.
+              <br />
+              Try searching a different term.
+            </Text>
+          </Stack>
         ) : (
           <Tree
             treeData={renderTreeNodes({
@@ -478,7 +639,7 @@ function TopicTree({
           />
         )}
       </div>
-    </div>
+    </Stack>
   );
 }
 
@@ -508,7 +669,7 @@ function TopicTreeWrapper({
   return (
     <div
       style={{ height: containerHeight - CONTAINER_SPACING * 3 }}
-      className={cx("ant-component", classes.wrapper)}
+      className={cx(classes.wrapper)}
     >
       <div
         ref={sizeRef}
