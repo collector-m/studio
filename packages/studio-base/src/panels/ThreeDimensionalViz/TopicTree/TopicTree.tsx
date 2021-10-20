@@ -15,18 +15,18 @@ import {
   DefaultButton,
   IconButton,
   IContextualMenuItemStyles,
-  mergeStyleSets,
   Stack,
-  TextField,
   Text,
-  useTheme,
+  TextField,
+  Toggle,
   ITheme,
   IStackStyles,
   ITextFieldStyles,
   IButtonStyles,
+  makeStyles,
+  mergeStyleSets,
+  useTheme,
 } from "@fluentui/react";
-import ChevronDownIcon from "@mdi/svg/svg/chevron-down.svg";
-import cx from "classnames";
 import { clamp, groupBy } from "lodash";
 import Tree from "rc-tree";
 import React, { useCallback, useMemo, useRef } from "react";
@@ -36,13 +36,11 @@ import { CSSTransition } from "react-transition-group";
 import useChangeDetector from "@foxglove/studio-base/hooks/useChangeDetector";
 import useLinkedGlobalVariables from "@foxglove/studio-base/panels/ThreeDimensionalViz/Interactions/useLinkedGlobalVariables";
 import { TopicSettingsCollection } from "@foxglove/studio-base/panels/ThreeDimensionalViz/SceneBuilder";
+import DiffModeIcon from "@foxglove/studio-base/panels/ThreeDimensionalViz/TopicTree/DiffModeIcon";
 import { syncBags, SYNC_OPTIONS } from "@foxglove/studio-base/panels/ThreeDimensionalViz/syncBags";
-import { colors } from "@foxglove/studio-base/util/sharedStyleConstants";
 
 import { Save3DConfig } from "../index";
-import DiffModeSettings from "./DiffModeSettings";
 import TopicTreeSwitcher, { SWITCHER_HEIGHT } from "./TopicTreeSwitcher";
-// import TopicViewModeSelector from "./TopicViewModeSelector";
 import { ROW_HEIGHT, TREE_SPACING } from "./constants";
 import NoMatchesSvg from "./noMatches.svg";
 import renderTreeNodes, { SWITCHER_WIDTH } from "./renderTreeNodes";
@@ -64,10 +62,9 @@ const CONTAINER_SPACING = 15;
 const DEFAULT_WIDTH = 360;
 const DEFAULT_XS_WIDTH = 240;
 const SEARCH_BAR_HEIGHT = 40;
-const SWITCHER_ICON_SIZE = 20;
 const MAX_CONTAINER_WIDTH_RATIO = 0.9;
 
-const classes = mergeStyleSets({
+const useStyles = makeStyles((theme) => ({
   wrapper: {
     position: "absolute",
     top: CONTAINER_SPACING,
@@ -78,10 +75,10 @@ const classes = mergeStyleSets({
   },
   tree: {
     position: "relative",
-    color: colors.TEXT,
-    borderRadius: "6px",
-    backgroundColor: colors.DARK2,
-    paddingBottom: "6px",
+    color: theme.semanticColors.bodyText,
+    borderRadius: theme.effects.roundedCorner4,
+    backgroundColor: theme.semanticColors.bodyBackground,
+    paddingBottom: theme.spacing.s1,
     maxWidth: "100%",
     overflow: "auto",
     pointerEvents: "auto",
@@ -115,18 +112,19 @@ const classes = mergeStyleSets({
       padding: 0,
 
       ":hover": {
-        background: colors.DARK4,
-      },
-      "&.rc-tree-treenode-disabled": {
-        color: colors.TEXT_MUTED,
-        cursor: "unset",
-
-        ".rc-tree-node-content-wrapper": {
-          cursor: "unset",
-        },
+        background: theme.semanticColors.buttonBackgroundHovered,
       },
       ".isXSWidth &": {
         padding: `0 ${TREE_SPACING}px`,
+      },
+    },
+    ".rc-tree-treenode.rc-tree-treenode-disabled": {
+      color: theme.semanticColors.buttonTextDisabled,
+
+      cursor: "unset",
+
+      ".rc-tree-node-content-wrapper": {
+        cursor: "unset",
       },
     },
     ".rc-tree-indent": {
@@ -141,201 +139,200 @@ const classes = mergeStyleSets({
       },
     },
   },
-  icon: {
-    width: SWITCHER_WIDTH,
-    height: ROW_HEIGHT,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+}));
 
-const makeStyles = (theme: ITheme) => ({
-  topicTree: {
-    root: {
-      position: "sticky",
-      top: 0,
-      zIndex: 1,
-      backgroundColor: theme.semanticColors.buttonBackgroundHovered,
-      borderTopLeftRadius: theme.effects.roundedCorner4,
-      borderTopRightRadius: theme.effects.roundedCorner4,
-    },
-  } as Partial<IStackStyles>,
+const useComponentStyles = (theme: ITheme) =>
+  useMemo(
+    () => ({
+      header: {
+        root: {
+          position: "sticky",
+          top: 0,
+          zIndex: 1,
+          backgroundColor: theme.semanticColors.buttonBackgroundHovered,
+          borderTopLeftRadius: theme.effects.roundedCorner4,
+          borderTopRightRadius: theme.effects.roundedCorner4,
+        },
+      } as Partial<IStackStyles>,
 
-  input: {
-    icon: {
-      lineHeight: 0,
-      color: theme.semanticColors.inputText,
-      left: theme.spacing.s1,
-      right: "auto",
-      fontSize: 18,
+      input: {
+        root: {
+          width: "100%",
+        },
+        icon: {
+          lineHeight: 0,
+          color: theme.semanticColors.inputText,
+          left: theme.spacing.s1,
+          right: "auto",
+          fontSize: 18,
 
-      svg: {
-        fill: "currentColor",
-        height: "1em",
-        width: "1em",
-      },
-    },
-    field: {
-      fontSize: theme.fonts.small.fontSize,
-      lineHeight: 30,
-      padding: `0 ${theme.spacing.l2}`,
+          svg: {
+            fill: "currentColor",
+            height: "1em",
+            width: "1em",
+          },
+        },
+        field: {
+          fontSize: theme.fonts.small.fontSize,
+          lineHeight: 30,
+          padding: `0 ${theme.spacing.l2}`,
 
-      "::placeholder": {
-        opacity: 0.6,
-        fontSize: theme.fonts.small.fontSize,
-        lineHeight: 30,
-      },
-    },
-    fieldGroup: {
-      backgroundColor: colors.DARK3,
-      borderColor: colors.DARK3,
+          "::placeholder": {
+            opacity: 0.6,
+            fontSize: theme.fonts.small.fontSize,
+            lineHeight: 30,
+          },
+        },
+        fieldGroup: {
+          backgroundColor: theme.semanticColors.bodyStandoutBackground,
+          borderColor: theme.semanticColors.bodyDivider,
 
-      ":hover, :focus": {
-        backgroundColor: colors.DARK2,
-      },
-    },
-  } as Partial<ITextFieldStyles>,
+          ":hover, :focus": {
+            backgroundColor: theme.semanticColors.bodyBackground,
+          },
+        },
+      } as Partial<ITextFieldStyles>,
 
-  clearIcon: {
-    root: {
-      position: "absolute",
-      right: 0,
-      transform: "translateX(-100%d)",
-      zIndex: 2,
-    },
-    rootHovered: { backgroundColor: "transparent" },
-    rootPressed: { backgroundColor: "transparent" },
-    rootDisabled: { backgroundColor: "transparent" },
-    icon: {
-      color: theme.semanticColors.bodySubtext,
+      clearIcon: {
+        root: {
+          position: "absolute",
+          right: 0,
+          transform: "translateX(-100%d)",
+          zIndex: 2,
+        },
+        rootHovered: { backgroundColor: "transparent" },
+        rootPressed: { backgroundColor: "transparent" },
+        rootDisabled: { backgroundColor: "transparent" },
+        icon: {
+          color: theme.semanticColors.bodySubtext,
 
-      svg: {
-        fill: "currentColor",
-        height: "1em",
-        width: "1em",
-      },
-    },
-  } as Partial<IButtonStyles>,
+          svg: {
+            fill: "currentColor",
+            height: "1em",
+            width: "1em",
+          },
+        },
+      } as Partial<IButtonStyles>,
 
-  topicDisplayMode: {
-    flexContainer: {
-      justifyContent: "space-between",
-    },
-    root: {
-      fontSize: theme.fonts.small.fontSize,
-      minWidth: 96,
-      borderColor: theme.semanticColors.bodyDivider,
-      backgroundColor: "transparent",
-      padding: `0 ${theme.spacing.s1}`,
-    },
-    label: {
-      fontWeight: 400,
-      textAlign: "left",
-    },
-    rootHovered: { backgroundColor: theme.semanticColors.buttonBackgroundPressed },
-    rootDisabled: { backgroundColor: "transparent" },
-    menuIcon: {
-      fontSize: 8,
-      color: "white",
+      topicDisplayMode: {
+        flexContainer: {
+          justifyContent: "space-between",
+        },
+        root: {
+          fontSize: theme.fonts.small.fontSize,
+          minWidth: 96,
+          borderColor: theme.semanticColors.bodyDivider,
+          backgroundColor: "transparent",
+          padding: `0 ${theme.spacing.s1}`,
+        },
+        label: {
+          fontWeight: 400,
+          textAlign: "left",
+        },
+        rootHovered: { backgroundColor: theme.semanticColors.buttonBackgroundPressed },
+        rootDisabled: { backgroundColor: "transparent" },
+        menuIcon: {
+          fontSize: 8,
+          color: "white",
 
-      svg: {
-        fill: "currentColor",
-        height: "1em",
-        width: "1em",
-      },
-    },
-  } as Partial<IButtonStyles>,
+          svg: {
+            fill: "currentColor",
+            height: "1em",
+            width: "1em",
+          },
+        },
+      } as Partial<IButtonStyles>,
 
-  topicDisplayModeMenuItem: {
-    root: {
-      height: "auto",
-      lineHeight: 32,
-    },
-    label: {
-      fontSize: theme.fonts.small.fontSize,
-    },
-  } as Partial<IContextualMenuItemStyles>,
+      topicDisplayModeMenuItem: {
+        root: {
+          height: "auto",
+          lineHeight: 32,
+        },
+        label: {
+          fontSize: theme.fonts.small.fontSize,
+        },
+      } as Partial<IContextualMenuItemStyles>,
 
-  expandIcon: {
-    rootHovered: { backgroundColor: "transparent" },
-    rootPressed: { backgroundColor: "transparent" },
-    rootDisabled: { backgroundColor: "transparent" },
-    rootFocused: { color: "white" },
-    icon: {
-      color: "white",
+      expandIcon: {
+        rootHovered: { backgroundColor: "transparent" },
+        rootPressed: { backgroundColor: "transparent" },
+        rootDisabled: { backgroundColor: "transparent" },
+        rootFocused: { color: "white" },
+        icon: {
+          color: "white",
 
-      svg: {
-        fill: "currentColor",
-        height: "1em",
-        width: "1em",
-      },
-    },
-  } as Partial<IButtonStyles>,
+          svg: {
+            fill: "currentColor",
+            height: "1em",
+            width: "1em",
+          },
+        },
+      } as Partial<IButtonStyles>,
 
-  syncIcon: {
-    rootHovered: { backgroundColor: "transparent" },
-    rootPressed: { backgroundColor: "transparent" },
-    rootDisabled: { backgroundColor: "transparent" },
-    menuIcon: {
-      fontSize: 8,
-      color: "white",
+      syncIcon: {
+        rootHovered: { backgroundColor: "transparent" },
+        rootPressed: { backgroundColor: "transparent" },
+        rootDisabled: { backgroundColor: "transparent" },
+        menuIcon: {
+          fontSize: 8,
+          color: "white",
 
-      svg: {
-        fill: "currentColor",
-        height: "1em",
-        width: "1em",
-      },
-    },
-    icon: {
-      color: "white",
+          svg: {
+            fill: "currentColor",
+            height: "1em",
+            width: "1em",
+          },
+        },
+        icon: {
+          color: "white",
 
-      svg: {
-        fill: "currentColor",
-        height: "1em",
-        width: "1em",
-      },
-    },
-  } as Partial<IButtonStyles>,
+          svg: {
+            fill: "currentColor",
+            height: "1em",
+            width: "1em",
+          },
+        },
+      } as Partial<IButtonStyles>,
 
-  syncMenuItem: {
-    root: {
-      height: "auto",
-      lineHeight: "1.3",
-    },
-    linkContent: {
-      flexDirection: "column",
-      alignItems: "flex-start",
-      padding: theme.spacing.s1,
-      paddingLeft: theme.spacing.l2,
-      position: "relative",
-    },
-    label: {
-      display: "block",
-      margin: 0,
-      fontSize: theme.fonts.smallPlus.fontSize,
-    },
-    secondaryText: {
-      textAlign: "left",
-      paddingLeft: 0,
-      fontSize: theme.fonts.xSmall.fontSize,
-    },
-    icon: {
-      position: "absolute",
-      left: 2,
-      top: "50%",
-      marginTop: "-0.5em",
-      color: "white",
+      syncMenuItem: {
+        root: {
+          height: "auto",
+          lineHeight: "1.3",
+        },
+        linkContent: {
+          flexDirection: "column",
+          alignItems: "flex-start",
+          padding: theme.spacing.s1,
+          paddingLeft: theme.spacing.l2,
+          position: "relative",
+        },
+        label: {
+          display: "block",
+          margin: 0,
+          fontSize: theme.fonts.smallPlus.fontSize,
+        },
+        secondaryText: {
+          textAlign: "left",
+          paddingLeft: 0,
+          fontSize: theme.fonts.xSmall.fontSize,
+        },
+        icon: {
+          position: "absolute",
+          left: 2,
+          top: "50%",
+          marginTop: "-0.5em",
+          color: "white",
 
-      svg: {
-        fill: "currentColor",
-        height: "1em",
-        width: "1em",
-      },
-    },
-  } as Partial<IContextualMenuItemStyles>,
-});
+          svg: {
+            fill: "currentColor",
+            height: "1em",
+            width: "1em",
+          },
+        },
+      } as Partial<IContextualMenuItemStyles>,
+    }),
+    [theme],
+  );
 
 const transitionClasses = mergeStyleSets({
   enter: {
@@ -444,7 +441,8 @@ function TopicTree({
   visibleTopicsCountByKey,
 }: BaseProps) {
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const classes = useStyles();
+  const styles = useComponentStyles(theme);
   const renderTopicTree = pinTopics || showTopicTree;
   const scrollContainerRef = useRef<HTMLDivElement>(ReactNull);
   const checkedKeysSet = useMemo(() => new Set(checkedKeys), [checkedKeys]);
@@ -481,11 +479,11 @@ function TopicTree({
   );
 
   return (
-    <Stack className={cx(classes.inner)} styles={{ root: { width: treeWidth } }}>
+    <Stack className={classes.inner} styles={{ root: { width: treeWidth } }}>
       <Stack
         horizontal
         verticalAlign="center"
-        styles={styles.topicTree}
+        styles={styles.header}
         tokens={{
           childrenGap: theme.spacing.s2,
           padding: theme.spacing.s2,
@@ -541,48 +539,69 @@ function TopicTree({
           styles={styles.expandIcon}
           title={topLevelNodesCollapsed ? "Expand all" : "Collapse all"}
         />
-        <IconButton
-          iconProps={{ iconName: "Sync" }}
-          menuIconProps={{ iconName: "CaretSolidDown" }}
-          menuProps={{
-            items: [
-              {
-                key: "bag1ToBag2",
-                text: "Sync bag 1 to bag 2",
-                secondaryText: "Set bag 2's topic settings and selected topics to bag 1's",
-                iconProps: { iconName: "ArrowStepLeft" },
-                onClick: () =>
-                  saveConfig(syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.bag1ToBag2)),
+        {hasFeatureColumn && (
+          <IconButton
+            iconProps={{ iconName: "Sync" }}
+            menuIconProps={{ iconName: "CaretSolidDown" }}
+            menuProps={{
+              items: [
+                {
+                  key: "bag1ToBag2",
+                  text: "Sync bag 1 to bag 2",
+                  secondaryText: "Set bag 2's topic settings and selected topics to bag 1's",
+                  iconProps: { iconName: "ArrowStepLeft" },
+                  onClick: () =>
+                    saveConfig(syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.bag1ToBag2)),
+                },
+                {
+                  key: "bag2ToBag1",
+                  text: "Sync bag 2 to bag 1",
+                  secondaryText: "Set bag 1's topic settings and selected topics to bag 2's",
+                  iconProps: { iconName: "ArrowStepRight" },
+                  onClick: () =>
+                    saveConfig(syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.bag2ToBag1)),
+                },
+                {
+                  key: "swapBag1AndBag2",
+                  text: "Swap bags 1 and 2",
+                  secondaryText: "Swap topic settings and selected topics between bag 1 and bag 2",
+                  iconProps: { iconName: "SwapHorizontal" },
+                  onClick: () =>
+                    saveConfig(
+                      syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.swapBag1AndBag2),
+                    ),
+                },
+              ],
+              styles: {
+                subComponentStyles: {
+                  menuItem: styles.syncMenuItem,
+                },
               },
-              {
-                key: "bag2ToBag1",
-                text: "Sync bag 2 to bag 1",
-                secondaryText: "Set bag 1's topic settings and selected topics to bag 2's",
-                iconProps: { iconName: "ArrowStepRight" },
-                onClick: () =>
-                  saveConfig(syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.bag2ToBag1)),
-              },
-              {
-                key: "swapBag1AndBag2",
-                text: "Swap bags 1 and 2",
-                secondaryText: "Swap topic settings and selected topics between bag 1 and bag 2",
-                iconProps: { iconName: "SwapHorizontal" },
-                onClick: () =>
-                  saveConfig(
-                    syncBags({ checkedKeys, settingsByKey }, SYNC_OPTIONS.swapBag1AndBag2),
-                  ),
-              },
-            ],
-            styles: {
-              subComponentStyles: {
-                menuItem: styles.syncMenuItem,
-              },
-            },
-          }}
-          styles={styles.syncIcon}
-        />
+            }}
+            styles={styles.syncIcon}
+          />
+        )}
       </Stack>
-      {hasFeatureColumn && <DiffModeSettings enabled={diffModeEnabled} saveConfig={saveConfig} />}
+      {hasFeatureColumn && (
+        <Stack
+          horizontal
+          horizontalAlign="space-between"
+          verticalAlign="center"
+          tokens={{ padding: `${theme.spacing.s2} ${theme.spacing.s1}` }}
+        >
+          <Toggle
+            onChange={() => saveConfig({ diffModeEnabled: !diffModeEnabled })}
+            checked={diffModeEnabled}
+            label="Show diff"
+            inlineLabel
+            styles={{
+              label: { marginLeft: theme.spacing.s1 },
+              root: { marginBottom: 0 },
+            }}
+          />
+          {diffModeEnabled && <DiffModeIcon />}
+        </Stack>
+      )}
       <div ref={scrollContainerRef} style={{ overflow: "auto", width: treeWidth }}>
         {showNoMatchesState ? (
           <Stack
@@ -637,18 +656,31 @@ function TopicTree({
             expandedKeys={shouldExpandAllKeys ? allKeys : expandedKeysRef.current}
             autoExpandParent={
               false
-              /* Set autoExpandParent to true when filtering */
+              // Set autoExpandParent to true when filtering
             }
             switcherIcon={
-              <div
-                className={classes.icon}
-                style={filterText.length > 0 ? { visibility: "hidden" } : {}}
-              >
-                <ChevronDownIcon
-                  fill="currentColor"
-                  style={{ width: SWITCHER_ICON_SIZE, height: SWITCHER_ICON_SIZE }}
-                />
-              </div>
+              <IconButton
+                iconProps={{ iconName: "ChevronDownSmall" }}
+                styles={{
+                  root: {
+                    height: 24,
+                    width: 24,
+                    color: "currentColor",
+                    visibility: filterText.length > 0 ? "hidden" : undefined,
+                  },
+                  rootHovered: { backgroundColor: "transparent", color: "currentColor" },
+                  rootPressed: { backgroundColor: "transparent", color: "currentColor" },
+                  icon: {
+                    fontSize: 12,
+
+                    svg: {
+                      fill: "currentColor",
+                      height: "1em",
+                      width: "1em",
+                    },
+                  },
+                }}
+              />
             }
           />
         )}
@@ -668,6 +700,7 @@ function TopicTreeWrapper({
   setShowTopicTree,
   ...rest
 }: Props) {
+  const classes = useStyles();
   const defaultTreeWidth = clamp(containerWidth, DEFAULT_XS_WIDTH, DEFAULT_WIDTH);
   const renderTopicTree = pinTopics || showTopicTree;
 
