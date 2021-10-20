@@ -219,7 +219,11 @@ export default class RosbridgePlayer implements Player {
           topicsMissingDatatypes.push(topicName);
           continue;
         }
-        topics.push({ name: topicName, datatype: type });
+        let studioDatatype: string | undefined;
+        if (type === "sensor_msgs/NavSatFix" || type === "sensor_msgs/msg/NavSatFix") {
+          studioDatatype = "gps";
+        }
+        topics.push({ name: topicName, datatype: type, studioDatatype });
         datatypeDescriptions.push({ type, messageDefinition });
         const parsedDefinition = parseMessageDefinition(messageDefinition, {
           ros2: rosVersion === 2,

@@ -17,12 +17,11 @@ import { useLatest } from "react-use";
 import { useDebouncedCallback } from "use-debounce";
 
 import { toSec } from "@foxglove/rostime";
-import { PanelExtensionContext, MessageEvent } from "@foxglove/studio";
+import { PanelExtensionContext, MessageEvent, Topic } from "@foxglove/studio";
 import EmptyState from "@foxglove/studio-base/components/EmptyState";
 import FilteredPointLayer, {
   POINT_MARKER_RADIUS,
 } from "@foxglove/studio-base/panels/Map/FilteredPointLayer";
-import { Topic } from "@foxglove/studio-base/players/types";
 
 import { NavSatFixMsg, Point } from "./types";
 
@@ -67,13 +66,7 @@ function MapPanel(props: MapPanelProps): JSX.Element {
   const [renderDone, setRenderDone] = useState<() => void>(() => () => {});
 
   const eligibleTopics = useMemo(() => {
-    return topics
-      .filter(
-        (topic) =>
-          topic.datatype === "sensor_msgs/NavSatFix" ||
-          topic.datatype === "sensor_msgs/msg/NavSatFix",
-      )
-      .map((topic) => topic.name);
+    return topics.filter((topic) => topic.studioDatatype === "gps").map((topic) => topic.name);
   }, [topics]);
 
   // Subscribe to eligible and enabled topics

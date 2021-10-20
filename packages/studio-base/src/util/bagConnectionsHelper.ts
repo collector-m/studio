@@ -64,10 +64,16 @@ export function bagConnectionsToTopics(
       console.warn("duplicate topic with differing datatype", existingTopic, connection);
       return;
     }
+    let studioDatatype: string | undefined;
+    if (connection.type === "sensor_msgs/NavSatFix") {
+      studioDatatype = "gps";
+    }
+
     topics[connection.topic] = {
       name: connection.topic,
       datatype: connection.type,
       numMessages: numMessagesByConnectionIndex[index],
+      studioDatatype,
     };
   });
   return Object.values(topics);

@@ -194,7 +194,13 @@ export default class Ros1Player implements Player {
 
     try {
       const topicArrays = await rosNode.getPublishedTopics();
-      const topics = topicArrays.map(([name, datatype]) => ({ name, datatype }));
+      const topics = topicArrays.map(([name, datatype]) => {
+        let studioDatatype: string | undefined;
+        if (datatype === "sensor_msgs/NavSatFix") {
+          studioDatatype = "gps";
+        }
+        return { name, datatype, studioDatatype };
+      });
       // Sort them for easy comparison
       const sortedTopics: Topic[] = sortBy(topics, "name");
 

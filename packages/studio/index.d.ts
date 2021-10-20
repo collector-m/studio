@@ -14,6 +14,8 @@ declare module "@foxglove/studio" {
     name: string;
     // topic datatype
     datatype: string;
+    // If the topic data conforms to a specific studio datatype, that datatype will be set in this field.
+    studioDatatype?: string;
   };
 
   /**

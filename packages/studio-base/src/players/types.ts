@@ -226,6 +226,8 @@ export type Topic = {
   // The number of messages present on the topic. Valid only for sources with a fixed number of
   // messages, such as bags.
   numMessages?: number;
+
+  studioDatatype?: string;
 };
 
 type RosSingularField = number | string | boolean | RosObject; // No time -- consider it a message.

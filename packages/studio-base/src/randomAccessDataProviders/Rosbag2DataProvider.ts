@@ -76,10 +76,16 @@ export default class Rosbag2DataProvider implements RandomAccessDataProvider {
       const messageDefinition = stringify(fullParsedMessageDefinitions);
       const md5sum = Md5.init(messageDefinition);
 
+      let studioDatatype: string | undefined;
+      if (topicDef.type === "sensor_msgs/msg/NavSatFix") {
+        studioDatatype = "gps";
+      }
+
       topics.push({
         name: topicDef.name,
         datatype: topicDef.type,
         numMessages: messageCounts.get(topicDef.name),
+        studioDatatype,
       });
       connections.push({
         messageDefinition,
