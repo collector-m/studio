@@ -370,7 +370,7 @@ export default function LayoutBrowser({
   );
 
   const [showSignInPrompt, setShowSignInPrompt] = useState<boolean>(
-    supportsSignIn && !layoutManager.supportsSharing && hideSignInPrompt,
+    supportsSignIn && !layoutManager.supportsSharing && !hideSignInPrompt,
   );
 
   return (
