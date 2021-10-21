@@ -364,7 +364,6 @@ type SharedProps = {
   getIsTreeNodeVisibleInTree: GetIsTreeNodeVisibleInTree;
   hasFeatureColumn: boolean;
   onNamespaceOverrideColorChange: OnNamespaceOverrideColorChange;
-  pinTopics: boolean;
   diffModeEnabled: boolean;
   rootTreeNode: TreeNode;
   saveConfig: Save3DConfig;
@@ -374,18 +373,19 @@ type SharedProps = {
   // eslint-disable-next-line @foxglove/no-boolean-parameters
   setShowTopicTree: (arg0: boolean | ((arg0: boolean) => boolean)) => void;
   shouldExpandAllKeys: boolean;
-  showTopicTree: boolean;
   topicDisplayMode: TopicDisplayMode;
   visibleTopicsCountByKey: VisibleTopicsCountByKey;
 };
 
-type Props = SharedProps & {
+type WrapperProps = SharedProps & {
+  pinTopics: boolean;
+  showTopicTree: boolean;
   containerHeight: number;
   containerWidth: number;
   onExitTopicTreeFocus: () => void;
 };
 
-type BaseProps = SharedProps & {
+type TopicTreeProps = SharedProps & {
   treeWidth: number;
   treeHeight: number;
 };
@@ -425,7 +425,6 @@ function TopicTree({
   getIsTreeNodeVisibleInTree,
   hasFeatureColumn,
   onNamespaceOverrideColorChange,
-  pinTopics,
   diffModeEnabled,
   rootTreeNode,
   saveConfig,
@@ -434,16 +433,14 @@ function TopicTree({
   setFilterText,
   setShowTopicTree,
   shouldExpandAllKeys,
-  showTopicTree,
   topicDisplayMode,
   treeHeight,
   treeWidth,
   visibleTopicsCountByKey,
-}: BaseProps) {
+}: TopicTreeProps) {
   const theme = useTheme();
   const classes = useStyles();
   const styles = useComponentStyles(theme);
-  const renderTopicTree = pinTopics || showTopicTree;
   const scrollContainerRef = useRef<HTMLDivElement>(ReactNull);
   const checkedKeysSet = useMemo(() => new Set(checkedKeys), [checkedKeys]);
 
@@ -699,7 +696,7 @@ function TopicTreeWrapper({
   saveConfig,
   setShowTopicTree,
   ...rest
-}: Props) {
+}: WrapperProps) {
   const classes = useStyles();
   const defaultTreeWidth = clamp(containerWidth, DEFAULT_XS_WIDTH, DEFAULT_WIDTH);
   const renderTopicTree = pinTopics || showTopicTree;
@@ -746,8 +743,6 @@ function TopicTreeWrapper({
               sceneErrorsByKey={sceneErrorsByKey}
               saveConfig={saveConfig}
               setShowTopicTree={setShowTopicTree}
-              pinTopics={pinTopics}
-              showTopicTree={showTopicTree}
               treeWidth={width ?? 0}
               treeHeight={
                 containerHeight - SEARCH_BAR_HEIGHT - SWITCHER_HEIGHT - CONTAINER_SPACING * 2
@@ -760,4 +755,4 @@ function TopicTreeWrapper({
   );
 }
 
-export default React.memo<Props>(TopicTreeWrapper);
+export default React.memo<WrapperProps>(TopicTreeWrapper);
