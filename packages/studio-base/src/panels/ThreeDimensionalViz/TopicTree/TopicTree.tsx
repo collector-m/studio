@@ -339,6 +339,26 @@ const useComponentStyles = (theme: ITheme) =>
           },
         },
       } as Partial<IContextualMenuItemStyles>,
+
+      switcherIcon: {
+        root: {
+          height: 24,
+          width: 24,
+          color: "currentColor",
+        },
+        rootHovered: { backgroundColor: "transparent", color: "currentColor" },
+        rootPressed: { backgroundColor: "transparent", color: "currentColor" },
+        rootDisabled: { visibility: "hidden" }, // using the disabled state to toggle visibility
+        icon: {
+          fontSize: 12,
+
+          svg: {
+            fill: "currentColor",
+            height: "1em",
+            width: "1em",
+          },
+        },
+      } as Partial<IButtonStyles>,
     }),
     [theme],
   );
@@ -509,11 +529,7 @@ function TopicTree({
               checked: true,
             })),
             useTargetWidth: true,
-            styles: {
-              subComponentStyles: {
-                menuItem: styles.topicDisplayModeMenuItem,
-              },
-            },
+            styles: { subComponentStyles: { menuItem: styles.topicDisplayModeMenuItem } },
           }}
           styles={styles.topicDisplayMode}
           text={TOPIC_DISPLAY_MODES[topicDisplayMode].label}
@@ -649,26 +665,9 @@ function TopicTree({
             }
             switcherIcon={
               <IconButton
+                disabled={filterText.length > 0}
                 iconProps={{ iconName: "ChevronDownSmall" }}
-                styles={{
-                  root: {
-                    height: 24,
-                    width: 24,
-                    color: "currentColor",
-                    visibility: filterText.length > 0 ? "hidden" : undefined,
-                  },
-                  rootHovered: { backgroundColor: "transparent", color: "currentColor" },
-                  rootPressed: { backgroundColor: "transparent", color: "currentColor" },
-                  icon: {
-                    fontSize: 12,
-
-                    svg: {
-                      fill: "currentColor",
-                      height: "1em",
-                      width: "1em",
-                    },
-                  },
-                }}
+                styles={styles.switcherIcon}
               />
             }
           />
