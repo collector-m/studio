@@ -12,13 +12,13 @@
 //   You may not use this file except in compliance with the License.
 import { Color } from "regl-worldview";
 
+import { TOPIC_DISPLAY_MODES } from "@foxglove/studio-base/panels/ThreeDimensionalViz/TopicTree/constants";
 import { Topic } from "@foxglove/studio-base/players/types";
 import { Namespace } from "@foxglove/studio-base/types/Messages";
 
 import { Save3DConfig } from "../index";
-import { TopicDisplayMode as DisplayMode } from "./TopicViewModeSelector";
 
-export type TopicDisplayMode = DisplayMode;
+export type TopicDisplayMode = keyof typeof TOPIC_DISPLAY_MODES;
 export type TopicTreeConfig = {
   name?: string;
   // displayName is only used to maintain TopicGroups flow type.

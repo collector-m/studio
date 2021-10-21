@@ -34,16 +34,25 @@ import { useResizeDetector } from "react-resize-detector";
 import { CSSTransition } from "react-transition-group";
 
 import useChangeDetector from "@foxglove/studio-base/hooks/useChangeDetector";
+import { Save3DConfig } from "@foxglove/studio-base/panels/ThreeDimensionalViz";
 import useLinkedGlobalVariables from "@foxglove/studio-base/panels/ThreeDimensionalViz/Interactions/useLinkedGlobalVariables";
 import { TopicSettingsCollection } from "@foxglove/studio-base/panels/ThreeDimensionalViz/SceneBuilder";
 import DiffModeIcon from "@foxglove/studio-base/panels/ThreeDimensionalViz/TopicTree/DiffModeIcon";
+import TopicTreeSwitcher, {
+  SWITCHER_HEIGHT,
+} from "@foxglove/studio-base/panels/ThreeDimensionalViz/TopicTree/TopicTreeSwitcher";
+import {
+  ROW_HEIGHT,
+  TREE_SPACING,
+  TOPIC_DISPLAY_MODES,
+} from "@foxglove/studio-base/panels/ThreeDimensionalViz/TopicTree/constants";
+import NoMatchesSvg from "@foxglove/studio-base/panels/ThreeDimensionalViz/TopicTree/noMatches.svg";
+import renderTreeNodes, {
+  SWITCHER_WIDTH,
+} from "@foxglove/studio-base/panels/ThreeDimensionalViz/TopicTree/renderTreeNodes";
+import { TopicDisplayMode } from "@foxglove/studio-base/panels/ThreeDimensionalViz/TopicTree/types";
 import { syncBags, SYNC_OPTIONS } from "@foxglove/studio-base/panels/ThreeDimensionalViz/syncBags";
 
-import { Save3DConfig } from "../index";
-import TopicTreeSwitcher, { SWITCHER_HEIGHT } from "./TopicTreeSwitcher";
-import { ROW_HEIGHT, TREE_SPACING } from "./constants";
-import NoMatchesSvg from "./noMatches.svg";
-import renderTreeNodes, { SWITCHER_WIDTH } from "./renderTreeNodes";
 import {
   DerivedCustomSettingsByKey,
   GetIsNamespaceCheckedByDefault,
@@ -389,23 +398,6 @@ type TopicTreeProps = SharedProps & {
   treeWidth: number;
   treeHeight: number;
 };
-
-export type TopicDisplayMode = keyof typeof TOPIC_DISPLAY_MODES;
-
-export const TOPIC_DISPLAY_MODES = {
-  SHOW_ALL: {
-    value: "SHOW_ALL",
-    label: "All",
-  },
-  SHOW_AVAILABLE: {
-    value: "SHOW_AVAILABLE",
-    label: "Available",
-  },
-  SHOW_SELECTED: {
-    value: "SHOW_SELECTED",
-    label: "Visible",
-  },
-} as const;
 
 const dropdownOptions = (Object.keys(TOPIC_DISPLAY_MODES) as TopicDisplayMode[]).map((key) => ({
   label: TOPIC_DISPLAY_MODES[key].label,
