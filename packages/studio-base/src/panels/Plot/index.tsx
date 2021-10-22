@@ -42,19 +42,16 @@ import {
 } from "@foxglove/studio-base/components/MessagePipeline";
 import Panel from "@foxglove/studio-base/components/Panel";
 import PanelToolbar from "@foxglove/studio-base/components/PanelToolbar";
-import {
-  ChartDefaultView,
-  getTooltipItemForMessageHistoryItem,
-  TooltipItem,
-} from "@foxglove/studio-base/components/TimeBasedChart";
+import { ChartDefaultView } from "@foxglove/studio-base/components/TimeBasedChart";
 import { OnClickArg as OnChartClickArgs } from "@foxglove/studio-base/src/components/Chart";
 import { PanelConfig, PanelConfigSchema } from "@foxglove/studio-base/types/panels";
+import { getTimestampForMessage } from "@foxglove/studio-base/util/time";
 
 import PlotChart from "./PlotChart";
 import PlotLegend from "./PlotLegend";
 import { getDatasetsAndTooltips } from "./datasets";
 import helpContent from "./index.help.md";
-import { PlotDataByPath } from "./internalTypes";
+import { PlotDataByPath, PlotDataItem } from "./internalTypes";
 import { PlotConfig } from "./types";
 
 export { plotableRosTypes } from "./types";
@@ -84,7 +81,13 @@ type Props = {
 const getPlotDataByPath = (itemsByPath: MessageDataItemsByPath): PlotDataByPath => {
   const ret: PlotDataByPath = {};
   Object.entries(itemsByPath).forEach(([path, items]) => {
-    ret[path] = [items.map(getTooltipItemForMessageHistoryItem)];
+    ret[path] = [
+      items.map((item) => ({
+        queriedData: item.queriedData,
+        receiveTime: item.message.receiveTime,
+        headerStamp: getTimestampForMessage(item.message),
+      })),
+    ];
   });
   return ret;
 };
@@ -104,7 +107,7 @@ function getBlockItemsByPath(
   decodeMessagePathsForMessagesByTopic: (_: MessageBlock) => MessageDataItemsByPath,
   blocks: readonly MessageBlock[],
 ) {
-  const ret: Record<string, TooltipItem[][]> = {};
+  const ret: Record<string, PlotDataItem[][]> = {};
   const lastBlockIndexForPath: Record<string, number> = {};
   blocks.forEach((block, i: number) => {
     const messagePathItemsForBlock: PlotDataByPath = getMessagePathItemsForBlock(
@@ -255,20 +258,21 @@ function Plot(props: Props) {
             continue;
           }
 
-          const tooltipItem = getTooltipItemForMessageHistoryItem({
-            message: msgEvent,
+          const plotDataItem: PlotDataItem = {
             queriedData: dataItem,
-          });
+            receiveTime: msgEvent.receiveTime,
+            headerStamp: getTimestampForMessage(msgEvent),
+          };
 
           if (showSingleCurrentMessage) {
-            accumulated[path] = [[tooltipItem]];
+            accumulated[path] = [[plotDataItem]];
           } else {
             const plotDataPath = (accumulated[path] ??= [[]]);
             // PlotDataPaths have 2d arrays of tooltip items to accomodate blocks which may have gaps
             // so each continuous set of blocks forms one set of tooltip items.
             // For streaming messages we treat this as one continuous set of items and always add
             // to the first "range"
-            plotDataPath[0]!.push(tooltipItem);
+            plotDataPath[0]!.push(plotDataItem);
           }
         }
       }

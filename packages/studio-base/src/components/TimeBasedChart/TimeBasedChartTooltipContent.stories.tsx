@@ -28,6 +28,24 @@ export function Default(): React.ReactElement {
     path: "/some/topic.path",
     value: 3,
     constantName: "ACTIVE",
+    startTime: { sec: 95, nsec: 0 },
+  };
+  const { tooltip } = useTooltip({
+    shown: true,
+    targetPosition: { x: 200, y: 100 },
+    contents: <TimeBasedChartTooltipContent tooltip={data} />,
+  });
+  return <div style={{ width: "100%", height: "100%", background: "white" }}>{tooltip}</div>;
+}
+
+export function XY(): React.ReactElement {
+  const data = {
+    x: 0,
+    y: 0,
+    datasetKey: "0",
+    path: "/some/topic.path",
+    value: 3,
+    constantName: "ACTIVE",
     item: {
       queriedData: [],
       receiveTime: { sec: 123, nsec: 456 },

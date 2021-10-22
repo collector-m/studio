@@ -27,11 +27,6 @@ const dataY = 5.544444561004639;
 const tooltipData: TimeBasedChartTooltipData = {
   x: dataX,
   y: dataY,
-  item: {
-    headerStamp: undefined,
-    receiveTime: { sec: 1396293889, nsec: 214366 },
-    queriedData: [{ constantName: "", value: 5.544444561004639, path: "/turtle1/pose.x" }],
-  },
   path: "/turtle1/pose.x",
   datasetKey: "0",
   value: 5.544444561004639,
